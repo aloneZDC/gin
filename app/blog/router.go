@@ -19,6 +19,8 @@ func Routers(e *gin.Engine) {
 	e.POST("/add", add)
 	e.POST("/update", update)
 	e.POST("/del", del)
+	e.POST("/update2", update2)
+	e.POST("/add2", add2)
 }
 
 func postHandler(e *gin.Context) {
@@ -153,6 +155,39 @@ func add(e *gin.Context) {
 	})
 }
 
+func add2(e *gin.Context) {
+	db := config.InitDB()
+	defer db.Close()
+	type Ecm_persons struct {
+		Id         int
+		First_Name string
+		Last_Name  string
+	}
+
+	first_name := e.PostForm("first_name")
+	last_name := e.PostForm("last_name")
+	var (
+		result gin.H
+	)
+	person := &Ecm_persons{
+		First_Name: first_name,
+		Last_Name:  last_name,
+	}
+	err := db.Create(&person)
+	if err != nil {
+		result = gin.H{
+			"msg":  200,
+			"data": person,
+		}
+	} else {
+		result = gin.H{
+			"msg":  -1,
+			"data": 0,
+		}
+	}
+	e.JSON(http.StatusOK, result)
+}
+
 //更新数据
 func update(e *gin.Context) {
 	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/test")
@@ -187,6 +222,42 @@ func update(e *gin.Context) {
 	e.JSON(http.StatusOK, gin.H{
 		"message": fmt.Sprintf("Successfully updated to %s", name),
 	})
+}
+
+func update2(e *gin.Context) {
+	db := config.InitDB()
+	defer db.Close()
+	type Ecm_persons struct {
+		Id         int
+		First_Name string
+		Last_Name  string
+	}
+	id := e.PostForm("id")
+	if id == "" {
+		e.JSON(http.StatusOK, gin.H{
+			"message": fmt.Sprintf("error update,id is null"),
+		})
+		return
+	}
+	first_name := e.PostForm("first_name")
+	last_name := e.PostForm("last_name")
+	var (
+		person Ecm_persons
+		result gin.H
+	)
+	err := db.Model(&person).Where("Id = ?", id).Updates(Ecm_persons{First_Name: first_name, Last_Name: last_name})
+	if err != nil {
+		result = gin.H{
+			"msg":  200,
+			"data": person,
+		}
+	} else {
+		result = gin.H{
+			"msg":  -1,
+			"data": 0,
+		}
+	}
+	e.JSON(http.StatusOK, result)
 }
 
 //删除数据
